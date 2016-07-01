@@ -39,7 +39,7 @@ func visit(path string, f os.FileInfo, err error) error {
 		json.Unmarshal(rBody, &resData)
 		var pathReg string
 		if string(os.PathSeparator) == "\\" {
-			pathReg = "\\\\([\\w]*).js"
+			pathReg = "\\\\([\\w.-]*).js"
 		} else {
 			pathReg = "/([\\w]*).js"
 		}
