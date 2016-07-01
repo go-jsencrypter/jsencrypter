@@ -3,60 +3,57 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"log"
 	"net/http"
 	"net/url"
 )
 
 func visit(path string, f os.FileInfo, err error) error {
-	fmt.Printf("Visited: %s\n", path)
-	fmt.Printf("isDir:%v\n", f.IsDir())
 	if !f.IsDir() && strings.Contains(f.Name(), ".js") {
-		fmt.Printf("isJS:%s\n", f.Name())
+		log.Printf("Encrypt: %s\n", path)
 		body, err := ioutil.ReadFile(path)
 		if err != nil {
-			//todo
+			log.Printf("An error occurred while read file:%s,error:%v\n", f.Name(), err)
 		}
-		fmt.Printf("body:%s\n", body)
 
 		resp, err := http.PostForm("http://tool.lu/js/ajax.html", url.Values{"code": {string(body)}, "operate": {"pack"}})
 		if err != nil {
-			fmt.Println("http error")
+			log.Printf("An error occurred while connecting server to encrypt file:%s, error: %v\n", f.Name(), err)
 		}
 		defer resp.Body.Close()
 		rBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("http return error")
+			log.Printf("An error occurred while read response body to encrypt file: %s, error: %v \n", f.Name(), err)
 		}
-		fmt.Printf("return body:%s\n", rBody)
-		tmpfn := filepath.Join("out", path)
 
-		fileContent := make(map[string]string)
-		json.Unmarshal(rBody, &fileContent)
-		fmt.Println("dir:" + tmpfn)
-		re := regexp.MustCompile("\\\\([\\w]*).js")
-		fmt.Printf("replace:%s\n", re.ReplaceAllLiteralString(tmpfn, ""))
-		tmpfnDir := re.ReplaceAllLiteralString(tmpfn, "")
-		err = os.MkdirAll(tmpfnDir, 0777)
-		if err != nil {
-			fmt.Println(err)
+		//encrypted js file to out dir
+		dest := filepath.Join("out", path)
+
+		resData := make(map[string]string)
+		json.Unmarshal(rBody, &resData)
+		var pathReg string
+		if string(os.PathSeparator) == "\\" {
+			pathReg = "\\\\([\\w]*).js"
+		} else {
+			pathReg = "/([\\w]*).js"
 		}
-		// if _, err := os.Stat(tmpfnDir); os.IsNotExist(err) {
-		// 	// path/to/whatever does not exist
-		// 	fmt.Println("dir not exsits")
-		// 	err = os.Mkdir(tmpfnDir, 0777)
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 	}
-		// }
-		if err := ioutil.WriteFile(tmpfn, []byte(fileContent["text"]), 0666); err != nil {
-			fmt.Println(err)
+		re := regexp.MustCompile(pathReg)
+		outDir := re.ReplaceAllLiteralString(dest, "")
+		err = os.MkdirAll(outDir, 0777)
+		if err != nil {
+			log.Printf("An error occurred while mkdir,file: %s,error: %v\n", f.Name(), err)
+
+		}
+
+		//write file from http response data to local file(dest)
+		if err := ioutil.WriteFile(dest, []byte(resData["text"]), 0666); err != nil {
+			log.Printf("An error occurred while write file to dest,file: %s,error: %v\n", f.Name(), err)
 		}
 	}
 
@@ -67,5 +64,9 @@ func main() {
 	flag.Parse()
 	root := flag.Arg(0)
 	err := filepath.Walk(root, visit)
-	fmt.Printf("filepath.Walk() returned %v\n", err)
+	if (err != nil) {
+		log.Println("encrypt js file failed.")
+		os.Exit(-1);
+	}
+	log.Println("Encrypt all js file successed.")
 }
