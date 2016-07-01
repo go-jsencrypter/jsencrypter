@@ -37,11 +37,11 @@ func visit(path string, f os.FileInfo, err error) error {
 
 		resData := make(map[string]string)
 		json.Unmarshal(rBody, &resData)
-		var pathReg string
+		pathReg := "([\\w.-]*).js"
 		if string(os.PathSeparator) == "\\" {
-			pathReg = "\\\\([\\w.-]*).js"
+			pathReg = "\\\\" + pathReg
 		} else {
-			pathReg = "/([\\w]*).js"
+			pathReg = "/" + pathReg
 		}
 		re := regexp.MustCompile(pathReg)
 		outDir := re.ReplaceAllLiteralString(dest, "")
