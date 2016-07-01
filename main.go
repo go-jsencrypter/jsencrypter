@@ -64,9 +64,9 @@ func main() {
 	flag.Parse()
 	root := flag.Arg(0)
 	err := filepath.Walk(root, visit)
-	if (err != nil) {
+	if err != nil {
 		log.Println("encrypt js file failed.")
-		os.Exit(-1);
+		os.Exit(-1)
 	}
 	log.Println("Encrypt all js file successed.")
 }
