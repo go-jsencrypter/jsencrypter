@@ -40,7 +40,7 @@ func visit(path string, f os.FileInfo, err error) error {
 		fileContent := make(map[string]string)
 		json.Unmarshal(rBody, &fileContent)
 		fmt.Println("dir:" + tmpfn)
-		re := regexp.MustCompile("/([\\w]*).js")
+		re := regexp.MustCompile("\\\\([\\w]*).js")
 		fmt.Printf("replace:%s\n", re.ReplaceAllLiteralString(tmpfn, ""))
 		tmpfnDir := re.ReplaceAllLiteralString(tmpfn, "")
 		err = os.MkdirAll(tmpfnDir, 0777)
